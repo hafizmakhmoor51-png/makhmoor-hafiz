@@ -8,6 +8,7 @@ const IstikharaAI: React.FC = () => {
   const [question, setQuestion] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const disclaimer = "واللہ ورسولہ اعلم (عزوجل و ﷺ) - حقیقی علم و غیب صرف اللہ تعالیٰ ہی کے پاس ہے";
 
@@ -16,9 +17,9 @@ const IstikharaAI: React.FC = () => {
     
     setLoading(true);
     setResponse(null);
+    setError(null);
 
     try {
-      // Initialize with the environment variable directly as per guidelines
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const nameAdad = calculateAbjad(name);
       const { planetName } = calculateCurrentSaatInfo();
@@ -47,10 +48,14 @@ const IstikharaAI: React.FC = () => {
         }
       });
 
-      setResponse(result.text || 'معذرت، رہنمائی حاصل نہیں ہو سکی۔ دوبارہ کوشش کریں۔');
-    } catch (error) {
-      console.error('Istikhara API Error:', error);
-      setResponse('سرور سے رابطہ کرنے میں دشواری پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔');
+      if (result.text) {
+        setResponse(result.text);
+      } else {
+        throw new Error('No response from AI');
+      }
+    } catch (err: any) {
+      console.error('Istikhara API Error:', err);
+      setError('سرور سے رابطہ کرنے میں دشواری پیش آئی۔ براہ کرم اپنا انٹرنیٹ چیک کریں اور دوبارہ کوشش کریں۔');
     } finally {
       setLoading(false);
     }
@@ -87,6 +92,12 @@ const IstikharaAI: React.FC = () => {
                 placeholder="اپنا سوال یا نیت یہاں تفصیل سے لکھیں..."
               />
             </div>
+
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-400 urdu-text text-sm">
+                {error}
+              </div>
+            )}
 
             <button 
               onClick={getIstikhara}
@@ -125,9 +136,6 @@ const IstikharaAI: React.FC = () => {
              <p className="urdu-text text-lg italic text-amber-500/70 font-bold drop-shadow-sm text-center">
                {disclaimer}
              </p>
-             <div className="text-slate-500 urdu-text text-sm italic">
-               اللہ تعالیٰ سے خیر کی دعا مانگیں، یہ رہنمائی صرف ایک اشارہ ہے۔
-             </div>
              <button 
                onClick={() => { setResponse(null); setQuestion(''); }}
                className="text-amber-500/60 hover:text-amber-500 transition-colors urdu-text text-sm underline"
@@ -137,12 +145,6 @@ const IstikharaAI: React.FC = () => {
           </div>
         </div>
       )}
-
-      <div className="text-center p-8 opacity-40">
-        <p className="urdu-text text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-          یہ نظام جیمنی اے آئی (Gemini AI) اور علم الاعداد کے قدیم اصولوں کے امتزاج سے کام کرتا ہے۔ نتائج کو حتمی نہ سمجھا جائے بلکہ اسے ایک مشورے کے طور پر لیں۔
-        </p>
-      </div>
     </div>
   );
 };
