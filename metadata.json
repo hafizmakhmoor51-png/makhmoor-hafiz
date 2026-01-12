@@ -1,0 +1,7 @@
+{
+  "name": "روحانی حساب کتاب و استخارہ پورٹل",
+  "description": "علم الاعداد اور روحانی علوم کی روشنی میں مکمل رہنمائی۔",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
