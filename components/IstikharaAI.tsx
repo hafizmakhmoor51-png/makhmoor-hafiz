@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { calculateAbjad, calculateCurrentSaatInfo, getCurrentDayName } from '../utils/abjad';
-import { STATUS_JUDGMENTS } from '../constants';
 
 const IstikharaAI: React.FC = () => {
   const [name, setName] = useState('');
@@ -19,7 +18,8 @@ const IstikharaAI: React.FC = () => {
     setResponse(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      // Initialize with the environment variable directly as per guidelines
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const nameAdad = calculateAbjad(name);
       const { planetName } = calculateCurrentSaatInfo();
       const day = getCurrentDayName();
@@ -49,7 +49,7 @@ const IstikharaAI: React.FC = () => {
 
       setResponse(result.text || 'معذرت، رہنمائی حاصل نہیں ہو سکی۔ دوبارہ کوشش کریں۔');
     } catch (error) {
-      console.error(error);
+      console.error('Istikhara API Error:', error);
       setResponse('سرور سے رابطہ کرنے میں دشواری پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔');
     } finally {
       setLoading(false);
