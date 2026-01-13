@@ -9,7 +9,7 @@ interface SaatProps {
 }
 
 const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
-  const [city, setCity] = useState<string>('مقام تلاش کیا جا رہا ہے...');
+  const [locationName, setLocationName] = useState<string>('مقام تلاش کیا جا رہا ہے...');
   const [sunrise, setSunrise] = useState<string>('--:--');
   const [sunset, setSunset] = useState<string>('--:--');
   const [dayName, setDayName] = useState<string>('');
@@ -20,8 +20,11 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedHour, setSelectedHour] = useState<SaatHour | null>(null);
   
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  
   const hasFetched = useRef(false);
-
   const planetsSequence = ['زحل', 'مشتری', 'مریخ', 'شمس', 'زہرہ', 'عطارد', 'قمر'];
   
   const getDayRegent = (dayIndex: number) => {
@@ -49,20 +52,18 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
     const now = new Date();
     const newDayHours: SaatHour[] = [];
     const newNightHours: SaatHour[] = [];
-
     const dayStatusRow = SAAT_STATUS_MATRIX[dayIndex] || [];
-
     const days = ['یکشنبه', 'دوشنبه', 'سه شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+    
     setDayName(days[dayIndex]);
     setNextDayName(days[(dayIndex + 1) % 7]);
 
-    // Day Hours
+    // Day Hours (Sunrise to Sunset)
     for (let i = 0; i < 12; i++) {
       const start = new Date(sr.getTime() + i * dayHourLength);
       const end = new Date(sr.getTime() + (i + 1) * dayHourLength);
       const planet = planetsSequence[planetIdx % 7];
       const status = dayStatusRow[i] || 'معلوم نہیں';
-      
       newDayHours.push({
         index: i + 1,
         start: start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -77,13 +78,12 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
       planetIdx++;
     }
 
-    // Night Hours
+    // Night Hours (Sunset to Next Sunrise)
     for (let i = 0; i < 12; i++) {
       const start = new Date(ss.getTime() + i * nightHourLength);
       const end = new Date(ss.getTime() + (i + 1) * nightHourLength);
       const planet = planetsSequence[planetIdx % 7];
       const status = dayStatusRow[i + 12] || 'معلوم نہیں';
-      
       newNightHours.push({
         index: i + 1,
         start: start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -102,10 +102,24 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
     setNightHours(newNightHours);
   }, []);
 
-  const fetchData = async (lat: number, lng: number) => {
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ur`);
+      const data = await response.json();
+      if (data && data.address) {
+        return data.address.city || data.address.town || data.address.village || data.address.state || data.address.country || 'عالمی مقام';
+      }
+    } catch (e) {
+      console.warn('Geocoding error:', e);
+    }
+    return `مقام: ${lat.toFixed(2)}N, ${lng.toFixed(2)}E`;
+  };
+
+  const fetchData = async (lat: number, lng: number, customName?: string) => {
     try {
       setLoading(true);
       setError(null);
+      
       const resToday = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=today&formatted=0`);
       const dataToday = await resToday.json();
       const resTomorrow = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=tomorrow&formatted=0`);
@@ -115,41 +129,95 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
         calculateHours(dataToday.results.sunrise, dataToday.results.sunset, dataTomorrow.results.sunrise);
         setSunrise(new Date(dataToday.results.sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         setSunset(new Date(dataToday.results.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        setCity(`${lat.toFixed(2)}N, ${lng.toFixed(2)}E`);
+        
+        if (customName) {
+          setLocationName(customName);
+        } else {
+          const detectedName = await reverseGeocode(lat, lng);
+          setLocationName(detectedName);
+        }
+        
         hasFetched.current = true;
       } else {
-        throw new Error('API Response Error');
+        throw new Error('Solar API Error');
       }
     } catch (err) {
-      setError('انٹرنیٹ یا سرور کا مسئلہ۔ دوبارہ کوشش کریں۔');
+      setError('انٹرنیٹ یا سولر ڈیٹا سرور سے رابطہ نہیں ہو سکا۔');
     } finally {
       setLoading(false);
     }
   };
 
-  const initLocation = useCallback(() => {
-    if (hasFetched.current) return;
+  const fetchByIP = async () => {
+    try {
+      console.log('Fetching location by IP...');
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      if (data.latitude && data.longitude) {
+        await fetchData(data.latitude, data.longitude, data.city || 'آپ کا مقام');
+        return true;
+      }
+    } catch (e) {
+      console.error('IP Location Error:', e);
+    }
+    return false;
+  };
+
+  const initLocation = useCallback(async (forceRefresh = false) => {
+    if (hasFetched.current && !forceRefresh) return;
     
     setLoading(true);
-    // Timeout for geolocation (WebView often hangs here)
-    const timeoutId = setTimeout(() => {
-      console.log('Geolocation timeout, using default Karachi location');
-      fetchData(24.86, 67.00);
-    }, 5000);
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        clearTimeout(timeoutId);
-        fetchData(pos.coords.latitude, pos.coords.longitude);
-      },
-      (err) => {
-        clearTimeout(timeoutId);
-        console.log('Geolocation error, using default Karachi location', err);
-        fetchData(24.86, 67.00);
-      },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
-    );
+    
+    // Attempt Geolocation first
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          await fetchData(pos.coords.latitude, pos.coords.longitude);
+        },
+        async (err) => {
+          console.warn('Browser Geolocation failed/denied. Trying IP fallback...');
+          const ipSuccess = await fetchByIP();
+          if (!ipSuccess) {
+            console.warn('IP fallback failed. Using Makkah fallback.');
+            await fetchData(21.3891, 39.8579, 'مکہ مکرمہ');
+          }
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    } else {
+      const ipSuccess = await fetchByIP();
+      if (!ipSuccess) {
+        await fetchData(21.3891, 39.8579, 'مکہ مکرمہ');
+      }
+    }
   }, []);
+
+  const handleCitySearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&accept-language=ur&limit=1`);
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lon = parseFloat(result.lon);
+        const displayName = result.display_name.split(',')[0];
+        await fetchData(lat, lon, displayName);
+        setSearchQuery('');
+      } else {
+        alert('شہر نہیں مل سکا۔ براہ کرم صحیح نام درج کریں۔');
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+      alert('تلاش کے دوران خرابی پیش آئی۔');
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   useEffect(() => {
     initLocation();
@@ -215,16 +283,16 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
     <div className="flex flex-col items-center justify-center p-20 space-y-4">
       <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
       <p className="urdu-text text-xl text-amber-500 animate-pulse">ساعات مرتب کی جا رہی ہیں...</p>
-      <p className="urdu-text text-xs text-slate-500">مقام اور وقت کا حساب لگایا جا رہا ہے</p>
+      <p className="urdu-text text-xs text-slate-500">خودکار مقام اور سولر ڈیٹا حاصل کیا جا رہا ہے</p>
     </div>
   );
 
   if (error) return (
     <div className="flex flex-col items-center justify-center p-20 space-y-6 card-gradient rounded-3xl border border-red-500/20">
       <div className="text-6xl text-red-500">⚠️</div>
-      <p className="urdu-text text-xl text-red-400">{error}</p>
+      <p className="urdu-text text-xl text-red-400 text-center">{error}</p>
       <button 
-        onClick={() => { hasFetched.current = false; initLocation(); }}
+        onClick={() => { hasFetched.current = false; initLocation(true); }}
         className="gold-bg text-emerald-950 px-8 py-3 rounded-xl urdu-text font-bold text-lg"
       >
         دوبارہ کوشش کریں
@@ -234,38 +302,65 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 animate-fadeIn pb-24 px-4">
-      {/* City & Times Info */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center card-gradient border border-slate-800 p-6 rounded-3xl">
-        <div className="text-right">
-          <h2 className="urdu-text text-amber-500 text-lg font-bold">مقام: {city}</h2>
+      {/* Search Bar & Location Info */}
+      <div className="flex flex-col gap-6">
+        <form onSubmit={handleCitySearch} className="flex gap-2 max-w-2xl mx-auto w-full">
+          <input 
+            type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-grow bg-emerald-900/20 border border-amber-500/20 rounded-2xl p-4 text-right urdu-text text-xl focus:border-amber-500 focus:outline-none transition-all placeholder:text-emerald-500/30 text-emerald-50 shadow-inner"
+            placeholder="شہر کا نام یہاں تلاش کریں (مثلاً گوجر خان)"
+            disabled={isSearching}
+          />
           <button 
-            onClick={() => { hasFetched.current = false; initLocation(); }}
-            className="text-[9px] text-emerald-500/60 uppercase tracking-widest hover:text-amber-500 transition-colors"
+            type="submit"
+            disabled={isSearching || !searchQuery.trim()}
+            className="gold-bg text-emerald-950 px-6 rounded-2xl font-bold urdu-text text-xl shadow-lg active:scale-95 disabled:opacity-50 transition-all whitespace-nowrap"
           >
-            [ Refresh Location ]
+            {isSearching ? 'تلاش...' : 'تلاش کریں'}
           </button>
-        </div>
-        <div className="flex justify-center gap-10">
-          <div className="text-center">
-            <span className="block text-amber-500/60 urdu-text text-xs">طلوع</span>
-            <span className="font-mono text-xl text-slate-200">{sunrise}</span>
+        </form>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center card-gradient border border-slate-800 p-6 rounded-3xl relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
+          
+          <div className="text-right space-y-1">
+            <div className="flex items-center justify-end gap-2">
+               <h2 className="urdu-text text-amber-500 text-2xl font-bold">{locationName}</h2>
+               <span className="text-xl">📍</span>
+            </div>
+            <button 
+              onClick={() => { hasFetched.current = false; initLocation(true); }}
+              className="text-[10px] text-emerald-500/60 uppercase tracking-widest hover:text-amber-500 transition-colors urdu-text"
+            >
+              [ Auto Detect Location ]
+            </button>
           </div>
-          <div className="text-center">
-            <span className="block text-amber-500/60 urdu-text text-xs">غروب</span>
-            <span className="font-mono text-xl text-slate-200">{sunset}</span>
+
+          <div className="flex justify-center gap-10">
+            <div className="text-center">
+              <span className="block text-amber-500/60 urdu-text text-xs">طلوعِ آفتاب</span>
+              <span className="font-mono text-xl text-slate-200">{sunrise}</span>
+            </div>
+            <div className="text-center">
+              <span className="block text-amber-500/60 urdu-text text-xs">غروبِ آفتاب</span>
+              <span className="font-mono text-xl text-slate-200">{sunset}</span>
+            </div>
           </div>
-        </div>
-        <div className="text-left hidden md:block">
-          <div className="bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20 inline-block">
-            <span className="urdu-text text-amber-500 text-sm">موجودہ دن: {getIslamicDayInfo().name}</span>
+
+          <div className="text-left hidden md:block">
+            <div className="bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20 inline-block">
+              <span className="urdu-text text-amber-500 text-sm">موجودہ دن: {getIslamicDayInfo().name}</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Grid Layout */}
+      {/* Sa'at Tables */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <HourTable title="دن کی ساعات" data={dayHours} dayLabel={`دن: ${dayName}`} />
-        <HourTable title="رات کی ساعات" data={nightHours} dayLabel={`رات/قمری دن: ${nextDayName}`} />
+        <HourTable title="دن کی ساعات" data={dayHours} dayLabel={`سورج نکلنے سے غروب تک: ${dayName}`} />
+        <HourTable title="رات کی ساعات" data={nightHours} dayLabel={`غروب سے اگلی صبح تک: ${nextDayName}`} />
       </div>
 
       {/* Details Modal */}
@@ -300,14 +395,12 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
                 <span className="urdu-text text-2xl text-amber-400 font-bold block">{selectedHour.wazifa}</span>
               </div>
 
-              <div className="flex justify-center pt-4">
-                <button 
-                  onClick={() => setSelectedHour(null)}
-                  className="w-full max-w-[200px] border border-slate-700 text-slate-400 font-bold py-3 rounded-xl urdu-text text-lg hover:bg-slate-800 transition-all"
-                >
-                  بند کریں
-                </button>
-              </div>
+              <button 
+                onClick={() => setSelectedHour(null)}
+                className="w-full max-w-[200px] border border-slate-700 text-slate-400 font-bold py-3 rounded-xl urdu-text text-lg hover:bg-slate-800 transition-all"
+              >
+                بند کریں
+              </button>
             </div>
           </div>
         </div>
