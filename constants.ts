@@ -11,7 +11,7 @@ export const ABJAD_MAP: Record<string, number> = {
 export const DAY_VALUES: Record<string, number> = {
   'یکشنبه': 387,
   'دوشنبه': 367,
-  'سه شنبه': 522,
+  'سه شنبه': 422,
   'چهارشنبه': 566,
   'پنجشنبه': 412,
   'جمعه': 118,

@@ -6,9 +6,10 @@ import { getIslamicDayInfo } from '../utils/abjad';
 
 interface SaatProps {
   onUseSaat: (planet: string, value: number) => void;
+  onSolarDataUpdate?: (data: { sunrise: string, sunset: string }) => void;
 }
 
-const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
+const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
   const [locationName, setLocationName] = useState<string>('مقام تلاش کیا جا رہا ہے...');
   const [sunrise, setSunrise] = useState<string>('--:--');
   const [sunset, setSunset] = useState<string>('--:--');
@@ -130,6 +131,14 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat }) => {
         setSunrise(new Date(dataToday.results.sunrise).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         setSunset(new Date(dataToday.results.sunset).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         
+        // Notify parent of accurate solar data
+        if (onSolarDataUpdate) {
+          onSolarDataUpdate({
+            sunrise: dataToday.results.sunrise,
+            sunset: dataToday.results.sunset
+          });
+        }
+
         if (customName) {
           setLocationName(customName);
         } else {

@@ -5,6 +5,7 @@ import { DAY_VALUES, PLANET_VALUES } from '../constants';
 
 interface MarzRohaniProps {
   initialSaat?: { planet: string; value: number } | null;
+  solarData?: { sunrise: string; sunset: string } | null;
 }
 
 interface DiagnosisResult {
@@ -19,10 +20,10 @@ interface DiagnosisResult {
   };
 }
 
-const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat }) => {
+const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat, solarData }) => {
   const [name, setName] = useState('');
   const [motherName, setMotherName] = useState('');
-  const [day, setDay] = useState(getIslamicDayInfo().name);
+  const [day, setDay] = useState(getIslamicDayInfo(solarData?.sunrise, solarData?.sunset).name);
   const [selectedPlanet, setSelectedPlanet] = useState('شمس');
   const [saatValue, setSaatValue] = useState<number>(PLANET_VALUES['شمس'] || 0);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
@@ -32,13 +33,14 @@ const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat }) => {
   const syncCurrentData = useCallback(() => {
     if (!isAutoSync) return;
     
-    const lunarDay = getIslamicDayInfo();
-    const { planetName, value } = calculateCurrentSaatInfo();
+    // Use solarData for precise location-based calculation if available
+    const lunarDay = getIslamicDayInfo(solarData?.sunrise, solarData?.sunset);
+    const { planetName, value } = calculateCurrentSaatInfo(solarData?.sunrise, solarData?.sunset);
     
     setDay(lunarDay.name);
     setSelectedPlanet(planetName);
     setSaatValue(value);
-  }, [isAutoSync]);
+  }, [isAutoSync, solarData]);
 
   // Handle auto-sync on mount and on intervals
   useEffect(() => {
@@ -46,14 +48,14 @@ const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat }) => {
       // If user came from Saat table, use that specific data and disable auto-sync
       setSelectedPlanet(initialSaat.planet);
       setSaatValue(initialSaat.value);
-      setDay(getIslamicDayInfo().name);
+      setDay(getIslamicDayInfo(solarData?.sunrise, solarData?.sunset).name);
       setIsAutoSync(false);
     } else {
       syncCurrentData();
       const interval = setInterval(syncCurrentData, 30000); // Check every 30 seconds
       return () => clearInterval(interval);
     }
-  }, [initialSaat, syncCurrentData]);
+  }, [initialSaat, syncCurrentData, solarData]);
 
   // Handle manual changes
   const handleDayChange = (val: string) => {
@@ -171,7 +173,7 @@ const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat }) => {
                 موجودہ ساعت اور دن خودکار طریقے سے منتخب کر لیے گئے ہیں
               </p>
               <p className="urdu-text text-emerald-500/40 text-[10px]">
-                قمری حساب کے مطابق دن مغرب کے وقت تبدیل ہو جاتا ہے
+                {solarData ? 'مقام کی بنیاد پر درست حساب' : 'تخمیناً حساب (مقام دستیاب نہیں)'}
               </p>
             </div>
           )}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppView } from './types';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -20,6 +20,9 @@ const App: React.FC = () => {
   
   // Shared state for diagnosis integration
   const [preSelectedSaat, setPreSelectedSaat] = useState<{planet: string, value: number} | null>(null);
+  
+  // Shared solar data for global consistency
+  const [solarData, setSolarData] = useState<{ sunrise: string; sunset: string } | null>(null);
 
   // State for simple Abjad calculator view
   const [calcInput, setCalcInput] = useState('');
@@ -96,11 +99,11 @@ const App: React.FC = () => {
       case AppView.DASHBOARD:
         return <Dashboard onSelect={handleViewSelect} isUnlocked={isUnlocked} />;
       case AppView.MARZ_ROHANI:
-        return <MarzRohani initialSaat={preSelectedSaat} />;
+        return <MarzRohani initialSaat={preSelectedSaat} solarData={solarData} />;
       case AppView.ISM_E_AZAM:
         return <IsmEAzam />;
       case AppView.ILM_US_SAAT:
-        return <Saat onUseSaat={handleUseSaat} />;
+        return <Saat onUseSaat={handleUseSaat} onSolarDataUpdate={setSolarData} />;
       case AppView.ABJAD_CALC:
         return (
           <div className="max-w-xl mx-auto card-gradient border border-emerald-800 p-8 rounded-2xl animate-fadeIn premium-shadow">
