@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppView } from './types';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
@@ -8,7 +8,6 @@ import IsmEAzam from './components/IsmEAzam';
 import Saat from './components/Saat';
 import ShadiMuwafiqat from './components/ShadiMuwafiqat';
 import KhairOShar from './components/KhairOShar';
-import Khwabnama from './components/Khwabnama';
 import RohaniIlaj from './components/RohaniIlaj';
 import PremiumModal from './components/PremiumModal';
 
@@ -81,7 +80,6 @@ const App: React.FC = () => {
       case AppView.ILM_US_SAAT: return 'علم الساعات';
       case AppView.SHADI_MUWAFIQAT: return 'شادی کی موافقت';
       case AppView.KHAIR_O_SHAR: return 'خیر و شر کی پہچان';
-      case AppView.KHWABNAMA: return 'اے آئی خوابنامہ';
       case AppView.ROHANI_ILAJ: return 'سلسلہ روحانی علاج و ہدایات';
       default: return 'ایپلی کیشن';
     }
@@ -106,8 +104,6 @@ const App: React.FC = () => {
         return <ShadiMuwafiqat />;
       case AppView.KHAIR_O_SHAR:
         return <KhairOShar initialSaat={preSelectedSaat} solarData={solarData} />;
-      case AppView.KHWABNAMA:
-        return <Khwabnama />;
       case AppView.ROHANI_ILAJ:
         return <RohaniIlaj />;
       default:

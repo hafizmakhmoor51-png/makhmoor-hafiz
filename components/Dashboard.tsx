@@ -40,14 +40,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
       )
     },
     { 
-      id: AppView.KHWABNAMA, 
-      title: 'اے آئی خوابنامہ', 
-      desc: 'اپنے خواب کی مستند تعبیر علامہ ابنِ سیرینؒ کی روشنی میں', 
-      icon: (
-        <span className="text-4xl">🌙</span>
-      )
-    },
-    { 
       id: AppView.MARZ_ROHANI, 
       title: 'مرض روحانی یا جسمانی؟', 
       desc: 'بیماری کی تشخیص بذریعہ اعداد', 

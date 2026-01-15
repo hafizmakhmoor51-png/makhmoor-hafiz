@@ -11,6 +11,9 @@ const Khwabnama: React.FC = () => {
   const disclaimer = "واللہ ورسولہ اعلم (عزوجل و ﷺ) - حقیقی علم و غیب صرف اللہ تعالیٰ ہی کے پاس ہے";
   const interpretationDisclaimer = "تعبیر ایک تخمینہ ہے، حتمی علم صرف اللہ کے پاس ہے";
 
+  // Hardcoded API Key as requested for immediate fix
+  const API_KEY = 'AIzaSyCnbR0oU6hZknBflwJUKOa9J27s_Xvp1YA';
+
   const getInterpretation = async () => {
     if (!dream.trim()) return;
     
@@ -19,16 +22,17 @@ const Khwabnama: React.FC = () => {
     setError(null);
 
     try {
-      if (!process.env.API_KEY) {
+      if (!API_KEY) {
         throw new Error('API Key is missing');
       }
 
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: API_KEY });
       
       const prompt = `Dream: "${dream}"`;
 
+      // Using gemini-1.5-flash as requested
       const result = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash',
         contents: prompt,
         config: {
           systemInstruction: 'User will provide a dream. You must provide a clear Urdu interpretation based on Imam Ibn Sirin\'s principles. Keep it concise and respectful.',
