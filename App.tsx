@@ -8,6 +8,8 @@ import IsmEAzam from './components/IsmEAzam';
 import Saat from './components/Saat';
 import ShadiMuwafiqat from './components/ShadiMuwafiqat';
 import KhairOShar from './components/KhairOShar';
+import Khwabnama from './components/Khwabnama';
+import RohaniIlaj from './components/RohaniIlaj';
 import PremiumModal from './components/PremiumModal';
 
 const App: React.FC = () => {
@@ -59,8 +61,8 @@ const App: React.FC = () => {
   };
 
   const isFeaturePremium = (view: AppView) => {
-    // Only 'علم الساعات' (ILM_US_SAAT) is FREE.
-    return view !== AppView.ILM_US_SAAT && view !== AppView.DASHBOARD;
+    // ILM_US_SAAT and ROHANI_ILAJ are FREE features.
+    return view !== AppView.ILM_US_SAAT && view !== AppView.ROHANI_ILAJ && view !== AppView.DASHBOARD;
   };
 
   const handleViewSelect = (view: AppView) => {
@@ -79,6 +81,8 @@ const App: React.FC = () => {
       case AppView.ILM_US_SAAT: return 'علم الساعات';
       case AppView.SHADI_MUWAFIQAT: return 'شادی کی موافقت';
       case AppView.KHAIR_O_SHAR: return 'خیر و شر کی پہچان';
+      case AppView.KHWABNAMA: return 'اے آئی خوابنامہ';
+      case AppView.ROHANI_ILAJ: return 'سلسلہ روحانی علاج و ہدایات';
       default: return 'ایپلی کیشن';
     }
   };
@@ -102,6 +106,10 @@ const App: React.FC = () => {
         return <ShadiMuwafiqat />;
       case AppView.KHAIR_O_SHAR:
         return <KhairOShar initialSaat={preSelectedSaat} solarData={solarData} />;
+      case AppView.KHWABNAMA:
+        return <Khwabnama />;
+      case AppView.ROHANI_ILAJ:
+        return <RohaniIlaj />;
       default:
         return <Dashboard onSelect={handleViewSelect} isUnlocked={isUnlocked} />;
     }
