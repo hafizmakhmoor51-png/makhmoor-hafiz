@@ -7,6 +7,7 @@ import MarzRohani from './components/MarzRohani';
 import IsmEAzam from './components/IsmEAzam';
 import Saat from './components/Saat';
 import ShadiMuwafiqat from './components/ShadiMuwafiqat';
+import KhairOShar from './components/KhairOShar';
 import PremiumModal from './components/PremiumModal';
 
 const App: React.FC = () => {
@@ -77,6 +78,7 @@ const App: React.FC = () => {
       case AppView.ISM_E_AZAM: return 'انتخابِ اسمِ اعظم';
       case AppView.ILM_US_SAAT: return 'علم الساعات';
       case AppView.SHADI_MUWAFIQAT: return 'شادی کی موافقت';
+      case AppView.KHAIR_O_SHAR: return 'خیر و شر کی پہچان';
       default: return 'ایپلی کیشن';
     }
   };
@@ -98,6 +100,8 @@ const App: React.FC = () => {
         return <Saat onUseSaat={handleUseSaat} onSolarDataUpdate={setSolarData} />;
       case AppView.SHADI_MUWAFIQAT:
         return <ShadiMuwafiqat />;
+      case AppView.KHAIR_O_SHAR:
+        return <KhairOShar initialSaat={preSelectedSaat} solarData={solarData} />;
       default:
         return <Dashboard onSelect={handleViewSelect} isUnlocked={isUnlocked} />;
     }

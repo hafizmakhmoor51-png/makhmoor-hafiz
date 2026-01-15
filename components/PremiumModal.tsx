@@ -27,7 +27,8 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ onClose, onUnlock }) => {
     }
   };
 
-  const whatsappLink = `https://wa.me/923459755655?text=Assalam-o-Alaikum! I want to buy the Premium Activation Key. My Device Request Code is: ${requestCode}`;
+  const whatsappNumber = "9234494466680";
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=Assalam-o-Alaikum! I want to buy the Premium Activation Key. My Device Request Code is: ${requestCode}`;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-emerald-950/80 backdrop-blur-md animate-fadeIn" onClick={onClose}>

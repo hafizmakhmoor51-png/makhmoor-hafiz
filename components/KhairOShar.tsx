@@ -1,0 +1,245 @@
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { calculateAbjad, getIslamicDayInfo, calculateCurrentSaatInfo } from '../utils/abjad';
+import { DAY_VALUES, PLANET_VALUES } from '../constants';
+
+interface KhairOSharProps {
+  initialSaat?: { planet: string; value: number } | null;
+  solarData?: { sunrise: string; sunset: string } | null;
+}
+
+interface AnalysisResult {
+  title: string;
+  detail: string;
+  element: string;
+  total: number;
+  remainder: number;
+  breakdown: {
+    nameAdad: number;
+    motherAdad: number;
+    dayValue: number;
+    saatValue: number;
+  };
+}
+
+const KhairOShar: React.FC<KhairOSharProps> = ({ initialSaat, solarData }) => {
+  const [name, setName] = useState('');
+  const [motherName, setMotherName] = useState('');
+  const [day, setDay] = useState(getIslamicDayInfo(solarData?.sunrise, solarData?.sunset).name);
+  const [selectedPlanet, setSelectedPlanet] = useState('شمس');
+  const [saatValue, setSaatValue] = useState<number>(PLANET_VALUES['شمس'] || 0);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [isAutoSync, setIsAutoSync] = useState(true);
+
+  const syncCurrentData = useCallback(() => {
+    if (!isAutoSync) return;
+    const lunarDay = getIslamicDayInfo(solarData?.sunrise, solarData?.sunset);
+    const { planetName, value } = calculateCurrentSaatInfo(solarData?.sunrise, solarData?.sunset);
+    setDay(lunarDay.name);
+    setSelectedPlanet(planetName);
+    setSaatValue(value);
+  }, [isAutoSync, solarData]);
+
+  useEffect(() => {
+    if (initialSaat) {
+      setSelectedPlanet(initialSaat.planet);
+      setSaatValue(initialSaat.value);
+      setDay(getIslamicDayInfo(solarData?.sunrise, solarData?.sunset).name);
+      setIsAutoSync(false);
+    } else {
+      syncCurrentData();
+      const interval = setInterval(syncCurrentData, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [initialSaat, syncCurrentData, solarData]);
+
+  const handleDayChange = (val: string) => {
+    setDay(val);
+    setIsAutoSync(false);
+  };
+
+  const handlePlanetChange = (val: string) => {
+    setSelectedPlanet(val);
+    setSaatValue(PLANET_VALUES[val] || 0);
+    setIsAutoSync(false);
+  };
+
+  const analyze = () => {
+    const nameAdad = calculateAbjad(name);
+    const motherAdad = calculateAbjad(motherName);
+    const dayValue = DAY_VALUES[day] || 0;
+    
+    const total = nameAdad + motherAdad + dayValue + saatValue;
+    const remainder = total % 4;
+
+    let resData = { title: '', detail: '', element: '' };
+
+    switch (remainder) {
+      case 1: 
+        resData = { 
+          title: 'بہتر ہے لیکن جلد بازی نہ کریں', 
+          detail: 'کام ہو جائے گا لیکن انجام میں تیزی یا غصہ ہو سکتا ہے۔',
+          element: 'آتشی'
+        }; 
+        break;
+      case 2: 
+        resData = { 
+          title: 'غیر یقینی صورتحال', 
+          detail: 'کام میں اتار چڑھاؤ رہے گا، کچھ وقت انتظار کرنا بہتر ہے۔',
+          element: 'بادی'
+        }; 
+        break;
+      case 3: 
+        resData = { 
+          title: 'بہترین اور بابرکت', 
+          detail: 'یہ کام آپ کے لیے بہت اچھا ہے، رزق اور سکون کی خوشخبری ہے۔',
+          element: 'آبی'
+        }; 
+        break;
+      case 0: 
+        resData = { 
+          title: 'تاخیر اور رکاوٹ', 
+          detail: 'محنت زیادہ کرنی پڑے گی، صدقہ دے کر کام شروع کریں۔',
+          element: 'خاکی'
+        }; 
+        break;
+    }
+
+    setResult({
+      ...resData,
+      total,
+      remainder,
+      breakdown: { nameAdad, motherAdad, dayValue, saatValue }
+    });
+  };
+
+  const disclaimer = "واللہ ورسولہ اعلم (عزوجل و ﷺ) - حقیقی علم و غیب صرف اللہ تعالیٰ ہی کے پاس ہے";
+
+  return (
+    <div className="max-w-xl mx-auto space-y-8 animate-fadeIn pb-20">
+      <div className="card-gradient border border-slate-800 rounded-3xl p-8 shadow-2xl relative">
+        <div className="absolute top-4 left-4">
+          <button 
+            onClick={() => setIsAutoSync(!isAutoSync)}
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] uppercase tracking-tighter transition-all ${isAutoSync ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isAutoSync ? 'bg-amber-500 animate-pulse' : 'bg-slate-600'}`}></span>
+            {isAutoSync ? 'Live Sync ON' : 'Manual Mode'}
+          </button>
+        </div>
+
+        <h2 className="text-2xl urdu-text gold-text text-center mb-8 underline underline-offset-8 decoration-amber-500/30">خیر و شر کی پہچان</h2>
+        
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-right urdu-text text-slate-400 mb-2">والدہ کا نام</label>
+              <input 
+                type="text" 
+                value={motherName}
+                onChange={(e) => setMotherName(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-right text-xl urdu-text focus:border-amber-500 focus:outline-none transition-all"
+                placeholder="والدہ کا نام لکھیں..."
+              />
+            </div>
+            <div>
+              <label className="block text-right urdu-text text-slate-400 mb-2">سائل کا نام</label>
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-right text-xl urdu-text focus:border-amber-500 focus:outline-none transition-all"
+                placeholder="اپنا نام لکھیں..."
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-right urdu-text text-slate-400 mb-2">موجودہ ساعت</label>
+              <select 
+                value={selectedPlanet}
+                onChange={(e) => handlePlanetChange(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-right urdu-text focus:border-amber-500 focus:outline-none transition-all appearance-none"
+              >
+                {Object.keys(PLANET_VALUES).map(p => (
+                  <option key={p} value={p}>{p} ({PLANET_VALUES[p]})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-right urdu-text text-slate-400 mb-2">موجودہ دن</label>
+              <select 
+                value={day}
+                onChange={(e) => handleDayChange(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-right urdu-text focus:border-amber-500 focus:outline-none transition-all appearance-none"
+              >
+                {Object.keys(DAY_VALUES).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button 
+            onClick={analyze}
+            disabled={!name || !motherName}
+            className="w-full gold-bg text-slate-900 font-bold py-4 rounded-xl urdu-text text-xl hover:opacity-90 disabled:opacity-50 transition-all shadow-[0_4px_15px_-5px_rgba(212,175,55,0.5)] active:scale-95"
+          >
+            حساب لگائیں
+          </button>
+        </div>
+      </div>
+
+      {result && (
+        <div className="card-gradient border-2 gold-border border-double rounded-3xl p-8 text-center animate-bounce-in relative overflow-hidden shadow-2xl">
+          <div className="mb-6 p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+            <h4 className="urdu-text text-slate-500 text-sm mb-3">عددی تفصیل</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center urdu-text text-xs">
+              <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                <span className="block text-slate-500">نام</span>
+                <span className="text-amber-500 font-bold">{result.breakdown.nameAdad}</span>
+              </div>
+              <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                <span className="block text-slate-500">والدہ</span>
+                <span className="text-amber-500 font-bold">{result.breakdown.motherAdad}</span>
+              </div>
+              <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                <span className="block text-slate-500">دن</span>
+                <span className="text-amber-500 font-bold">{result.breakdown.dayValue}</span>
+              </div>
+              <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                <span className="block text-slate-500">ساعت</span>
+                <span className="text-amber-500 font-bold">{result.breakdown.saatValue}</span>
+              </div>
+            </div>
+            <div className="mt-4 pt-2 border-t border-slate-800 flex justify-between items-center urdu-text text-sm">
+              <span className="text-slate-400">کل اعداد: {result.total}</span>
+              <span className="text-xl font-bold text-amber-500">باقیماندہ: {result.remainder}</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="inline-block px-4 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full text-amber-400 urdu-text text-sm mb-2">
+              عنصر: {result.element}
+            </div>
+            <h3 className="text-3xl urdu-text font-bold text-amber-500 mb-2 drop-shadow-md">
+              نتیجہ: {result.title}
+            </h3>
+            <p className="urdu-text text-lg text-slate-200 leading-relaxed bg-slate-900/30 p-4 rounded-xl border border-slate-800/50 italic">
+              "{result.detail}"
+            </p>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-amber-500/10">
+            <p className="urdu-text text-xs italic text-amber-500/60">
+              {disclaimer}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default KhairOShar;

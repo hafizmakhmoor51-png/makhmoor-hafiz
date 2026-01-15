@@ -4,7 +4,8 @@ export enum AppView {
   MARZ_ROHANI = 'MARZ_ROHANI',
   ISM_E_AZAM = 'ISM_E_AZAM',
   ILM_US_SAAT = 'ILM_US_SAAT',
-  SHADI_MUWAFIQAT = 'SHADI_MUWAFIQAT'
+  SHADI_MUWAFIQAT = 'SHADI_MUWAFIQAT',
+  KHAIR_O_SHAR = 'KHAIR_O_SHAR'
 }
 
 export interface AllahName {

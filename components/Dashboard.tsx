@@ -22,12 +22,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
       )
     },
     { 
+      id: AppView.KHAIR_O_SHAR, 
+      title: 'خیر و شر کی پہچان', 
+      desc: 'ملازمت، کاروبار اور سفر کے لیے مستند عددی رہنمائی', 
+      icon: (
+        <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      )
+    },
+    { 
       id: AppView.MARZ_ROHANI, 
       title: 'مرض روحانی یا جسمانی؟', 
       desc: 'بیماری کی تشخیص بذریعہ اعداد', 
       icon: (
         <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       )
     },
@@ -56,14 +66,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
   const disclaimer = "واللہ ورسولہ اعلم (عزوجل و ﷺ) - حقیقی علم و غیب صرف اللہ تعالیٰ ہی کے پاس ہے";
 
   return (
-    <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn pb-24">
-      {features.map((f) => {
+    <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-fadeIn pb-24">
+      {features.map((f, idx) => {
         const locked = !isUnlocked && isPremium(f.id);
+        // Special alignment for the last card if count is odd on large screens
+        const isLastOdd = idx === features.length - 1 && features.length % 3 !== 0;
+        
         return (
           <button
             key={f.id}
             onClick={() => onSelect(f.id)}
-            className={`card-gradient p-8 rounded-[3rem] text-right transition-all transform hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] group relative overflow-hidden flex flex-col items-end border-2 ${locked ? 'border-emerald-900/50' : 'border-amber-500/10'}`}
+            className={`card-gradient p-8 rounded-[3rem] text-right transition-all transform hover:-translate-y-2 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] group relative overflow-hidden flex flex-col items-end border-2 ${locked ? 'border-emerald-900/50' : 'border-amber-500/10'} ${isLastOdd ? 'lg:col-span-1 lg:mx-auto lg:w-full' : ''}`}
           >
             {/* Locked Overlay */}
             {locked && (
@@ -80,12 +93,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
               {f.icon}
             </div>
             
-            <h3 className="text-3xl urdu-text font-bold mb-4 group-hover:text-amber-500 transition-colors flex items-center gap-3">
+            <h3 className="text-2xl md:text-3xl urdu-text font-bold mb-4 group-hover:text-amber-500 transition-colors flex items-center gap-3">
               {f.title}
-              {locked && <span className="text-amber-500/30 text-xs bg-amber-500/5 px-2 py-1 rounded">پریمیم</span>}
+              {locked && <span className="text-amber-500/30 text-[10px] bg-amber-500/5 px-2 py-1 rounded">پریمیم</span>}
             </h3>
             
-            <p className="text-emerald-100/60 text-lg urdu-text leading-relaxed mb-8 text-right">
+            <p className="text-emerald-100/60 text-base md:text-lg urdu-text leading-relaxed mb-8 text-right">
               {f.desc}
             </p>
 
