@@ -19,27 +19,19 @@ const Khwabnama: React.FC = () => {
     setError(null);
 
     try {
+      if (!process.env.API_KEY) {
+        throw new Error('API Key is missing');
+      }
+
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
-      const prompt = `
-        User has described a dream: "${dream}".
-        
-        As an expert in Islamic dream interpretation (Ta'bir al-Ahlam) following the traditions of Imam Ibn Sirin and other authentic Islamic sources, provide a clear, detailed, and respectful interpretation in Urdu.
-        
-        Guidelines:
-        - Use Nastaliq-friendly phrasing.
-        - Maintain a spiritual, humble, and supportive tone.
-        - Explain potential meanings or symbols within the dream.
-        - If the dream is unclear, ask for more details politely while providing general possibilities.
-        - Ensure the response is around 150-250 words.
-        - Start directly with the interpretation.
-      `;
+      const prompt = `Dream: "${dream}"`;
 
       const result = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: prompt,
         config: {
-          systemInstruction: 'You are an expert Islamic dream interpreter based on Ibn Sirin teachings. You respond only in Urdu with wisdom and spiritual depth.',
+          systemInstruction: 'User will provide a dream. You must provide a clear Urdu interpretation based on Imam Ibn Sirin\'s principles. Keep it concise and respectful.',
           temperature: 0.7,
         }
       });
@@ -51,7 +43,25 @@ const Khwabnama: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Khwabnama API Error:', err);
-      setError('تعبیر حاصل کرنے میں دشواری پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔');
+      let errorMsg = 'تعبیر حاصل کرنے میں دشواری پیش آ رہی ہے۔';
+
+      if (err.message) {
+        if (err.message.includes('API Key') || err.message.includes('API_KEY')) {
+          errorMsg += ' (API Key موجود نہیں یا غلط ہے)';
+        } else if (err.message.includes('403') || err.message.includes('PERMISSION_DENIED')) {
+          errorMsg += ' (اجازت نہیں ہے - API Key چیک کریں)';
+        } else if (err.message.includes('429') || err.message.includes('RESOURCE_EXHAUSTED')) {
+           errorMsg += ' (کوٹہ ختم ہو گیا ہے)';
+        } else if (err.message.includes('500') || err.message.includes('503') || err.message.includes('Overloaded')) {
+          errorMsg += ' (سروس عارضی طور پر دستیاب نہیں)';
+        } else if (err.message.includes('fetch') || err.message.includes('network')) {
+          errorMsg += ' (انٹرنیٹ کنکشن چیک کریں)';
+        } else {
+          errorMsg += ` (${err.message})`;
+        }
+      }
+      
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -82,7 +92,7 @@ const Khwabnama: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-400 urdu-text text-sm">
+              <div className="bg-red-500/10 border border-red-500/50 p-4 rounded-xl text-red-400 urdu-text text-sm" dir="rtl">
                 {error}
               </div>
             )}
