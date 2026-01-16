@@ -27,7 +27,7 @@ const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
     'مکمل علم الساعات (سعد و نحس اور وظائف)'
   ];
 
-  const whatsappNumber = "9234494466680";
+  const whatsappNumber = "923449466680";
 
   return (
     <div className="min-h-screen flex flex-col p-4 bg-emerald-950 relative overflow-hidden">
@@ -60,12 +60,12 @@ const Paywall: React.FC<PaywallProps> = ({ onUnlock }) => {
 
           <div className="space-y-6">
             <a 
-              href={`https://wa.me/${whatsappNumber}?text=Assalam-o-Alaikum! I want to buy the full access for the Spiritual App.`}
+              href={`https://wa.me/${whatsappNumber}?text=Assalam-o-Alaikum! I want to buy the License Key for my Device ID.`}
               target="_blank"
               rel="noopener noreferrer"
               className="block w-full gold-bg text-emerald-950 font-bold py-5 rounded-2xl urdu-text text-xl hover:bg-amber-400 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
             >
-              <span>مکمل ایکسس خریدنے کے لیے ابھی رابطہ کریں</span>
+              <span>رابطہ کریں: 0344-9466680</span>
               <span className="text-2xl">📱</span>
             </a>
 

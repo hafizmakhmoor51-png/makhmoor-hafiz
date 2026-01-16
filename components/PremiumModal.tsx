@@ -27,8 +27,8 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ onClose, onUnlock }) => {
     }
   };
 
-  const whatsappNumber = "9234494466680";
-  const whatsappLink = `https://wa.me/${whatsappNumber}?text=Assalam-o-Alaikum! I want to buy the Premium Activation Key. My Device Request Code is: ${requestCode}`;
+  const whatsappNumber = "923449466680";
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=Assalam-o-Alaikum! I want to buy the License Key for my Device ID. My Device Request Code is: ${requestCode}`;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-emerald-950/80 backdrop-blur-md animate-fadeIn" onClick={onClose}>
@@ -62,7 +62,7 @@ const PremiumModal: React.FC<PremiumModalProps> = ({ onClose, onUnlock }) => {
               rel="noopener noreferrer"
               className="block w-full gold-bg text-emerald-950 font-bold py-5 rounded-[1.5rem] urdu-text text-xl hover:bg-amber-400 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
             >
-              <span>واٹس ایپ پر رابطہ کریں</span>
+              <span>رابطہ کریں: 0344-9466680</span>
               <span className="text-2xl">📱</span>
             </a>
             
