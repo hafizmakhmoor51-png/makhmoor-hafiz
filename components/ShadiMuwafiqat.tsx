@@ -86,16 +86,24 @@ const MUWAFIQAT_MAP: Record<string, string> = {
   '9-9': 'ہمیشہ جنگ و جدل کا شکار رہیں گے لیکن طلاق نہیں ہو گی',
 };
 
+interface CompatibilityResult {
+  interpretation: string;
+  maleMufrad: number;
+  femaleMufrad: number;
+  maleTotalAdad: number;
+  femaleTotalAdad: number;
+}
+
 const ShadiMuwafiqat: React.FC = () => {
-  const [maleName, setMaleName] = useState('');
-  const [femaleName, setFemaleName] = useState('');
-  const [result, setResult] = useState<{ interpretation: string; maleMufrad: number; femaleMufrad: number } | null>(null);
+  const [maleInput, setMaleInput] = useState('');
+  const [femaleInput, setFemaleInput] = useState('');
+  const [result, setResult] = useState<CompatibilityResult | null>(null);
 
   const disclaimer = "واللہ ورسولہ اعلم (عزوجل و ﷺ) - حقیقی علم و غیب صرف اللہ تعالیٰ ہی کے پاس ہے";
 
   const calculateCompatibility = () => {
-    const maleSum = calculateAbjad(maleName);
-    const femaleSum = calculateAbjad(femaleName);
+    const maleSum = calculateAbjad(maleInput);
+    const femaleSum = calculateAbjad(femaleInput);
     
     const maleMufrad = calculateMufrad(maleSum);
     const femaleMufrad = calculateMufrad(femaleSum);
@@ -103,7 +111,13 @@ const ShadiMuwafiqat: React.FC = () => {
     const key = `${maleMufrad}-${femaleMufrad}`;
     const interpretation = MUWAFIQAT_MAP[key] || 'معلومات دستیاب نہیں';
     
-    setResult({ interpretation, maleMufrad, femaleMufrad });
+    setResult({ 
+      interpretation, 
+      maleMufrad, 
+      femaleMufrad,
+      maleTotalAdad: maleSum,
+      femaleTotalAdad: femaleSum
+    });
   };
 
   return (
@@ -111,32 +125,32 @@ const ShadiMuwafiqat: React.FC = () => {
       <div className="card-gradient border border-slate-800 rounded-2xl p-8 shadow-xl">
         <h2 className="text-2xl urdu-text gold-text text-center mb-8 underline underline-offset-8 decoration-amber-500/30">شادی کی موافقت</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 gap-6 mb-8">
           <div className="space-y-2">
-            <label className="block text-right urdu-text text-slate-400">لڑکے کا نام</label>
+            <label className="block text-right urdu-text text-slate-400">لڑکے کا نام اور والدہ کا نام</label>
             <input 
               type="text" 
-              value={maleName}
-              onChange={(e) => setMaleName(e.target.value)}
+              value={maleInput}
+              onChange={(e) => setMaleInput(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-right text-2xl urdu-text focus:border-amber-500 focus:outline-none transition-all shadow-inner"
-              placeholder="نام لکھیں..."
+              placeholder="مثال: محمد علی زینب بی بی"
             />
           </div>
           <div className="space-y-2">
-            <label className="block text-right urdu-text text-slate-400">لڑکی کا نام</label>
+            <label className="block text-right urdu-text text-slate-400">لڑکی کا نام اور والدہ کا نام</label>
             <input 
               type="text" 
-              value={femaleName}
-              onChange={(e) => setFemaleName(e.target.value)}
+              value={femaleInput}
+              onChange={(e) => setFemaleInput(e.target.value)}
               className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-right text-2xl urdu-text focus:border-amber-500 focus:outline-none transition-all shadow-inner"
-              placeholder="نام لکھیں..."
+              placeholder="مثال: حمیدہ جان کلثوم بی بی"
             />
           </div>
         </div>
 
         <button 
           onClick={calculateCompatibility}
-          disabled={!maleName || !femaleName}
+          disabled={!maleInput || !femaleInput}
           className="w-full gold-bg text-slate-900 font-bold py-5 rounded-xl urdu-text text-2xl hover:opacity-90 disabled:opacity-50 transition-all shadow-[0_4px_20px_-5px_rgba(212,175,55,0.6)] active:scale-95"
         >
           موافقت معلوم کریں
@@ -148,6 +162,21 @@ const ShadiMuwafiqat: React.FC = () => {
           {/* Decorative Corners */}
           <div className="absolute top-0 left-0 w-24 h-24 border-t-4 border-l-4 border-amber-500/20 rounded-tl-3xl"></div>
           <div className="absolute bottom-0 right-0 w-24 h-24 border-b-4 border-r-4 border-amber-500/20 rounded-br-3xl"></div>
+
+          {/* Breakdown Section */}
+          <div className="mb-8 p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+            <h4 className="urdu-text text-slate-500 text-sm mb-3">حسابی تفصیل (Breakdown)</h4>
+            <div className="grid grid-cols-2 gap-4 text-center urdu-text text-xs">
+              <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                <span className="block text-slate-500 mb-1">لڑکے کے کل اعداد</span>
+                <span className="text-amber-500 font-bold text-lg">{result.maleTotalAdad}</span>
+              </div>
+              <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                <span className="block text-slate-500 mb-1">لڑکی کے کل اعداد</span>
+                <span className="text-amber-500 font-bold text-lg">{result.femaleTotalAdad}</span>
+              </div>
+            </div>
+          </div>
 
           <div className="flex justify-center gap-12 mb-8 border-b border-slate-800 pb-6">
             <div className="text-center">

@@ -1,11 +1,71 @@
 
 import { AllahName } from './types';
 
+/**
+ * Revised Abjad Mapping as per specific Ilm-ul-Adad rules:
+ * - Standalone Hamza (ء) = 0
+ * - Carrier Hamzas (ؤ, ئ) count only the carrier value (Waw=6, Ya=10)
+ * - Includes all Urdu/Persian extensions
+ */
 export const ABJAD_MAP: Record<string, number> = {
-  'ا': 1, 'آ': 1, 'ب': 2, 'ج': 3, 'د': 4, 'ہ': 5, 'و': 6, 'ز': 7, 'ح': 8, 'ط': 9,
-  'ی': 10, 'ک': 20, 'ل': 30, 'م': 40, 'ن': 50, 'س': 60, 'ع': 70, 'ف': 80, 'ص': 90,
-  'ق': 100, 'ر': 200, 'ش': 300, 'ت': 400, 'ث': 500, 'خ': 600, 'ذ': 700, 'ض': 800, 'ظ': 900, 'غ': 1000,
-  'ے': 10, 'ٹ': 400, 'پ': 2, 'چ': 3, 'ڈ': 4, 'ڑ': 200, 'ژ': 7, 'گ': 20, 'ھ': 5, 'ء': 1
+  // Alif / Alif Mad
+  'ا': 1, 'آ': 1,
+  // Ba / Pa
+  'ب': 2, 'پ': 2,
+  // Jeem / Che
+  'ج': 3, 'چ': 3,
+  // Dal / Dal (Urdu)
+  'د': 4, 'ڈ': 4,
+  // He / He (Urdu/Hooked)
+  'ہ': 5, 'ھ': 5,
+  // Waw / Hamza on Waw (Carrier)
+  'و': 6, 'ؤ': 6,
+  // Ze / Zhe
+  'ز': 7, 'ژ': 7,
+  // Ha (Heavy)
+  'ح': 8,
+  // Toe
+  'ط': 9,
+  // Ya / Bari Ye / Alif Maksura / Hamza on Ya (Carrier)
+  'ی': 10, 'ے': 10, 'ى': 10, 'ئ': 10,
+  // Kaf / Gaf
+  'ک': 20, 'گ': 20,
+  // Lam
+  'ل': 30,
+  // Meem
+  'م': 40,
+  // Noon / Noon Ghunna
+  'ن': 50, 'ں': 50,
+  // Seen
+  'س': 60,
+  // Ain
+  'ع': 70,
+  // Fa
+  'ف': 80,
+  // Sad
+  'ص': 90,
+  // Qaf
+  'ق': 100,
+  // Re / Ra (Urdu)
+  'ر': 200, 'ڑ': 200,
+  // Sheen
+  'ش': 300,
+  // Te / Te (Urdu)
+  'ت': 400, 'ٹ': 400,
+  // Se
+  'ث': 500,
+  // Khe
+  'خ': 600,
+  // Zal
+  'ذ': 700,
+  // Zad
+  'ض': 800,
+  // Zoe
+  'ظ': 900,
+  // Ghain
+  'غ': 1000,
+  // Standalone Hamza
+  'ء': 0
 };
 
 export const DAY_VALUES: Record<string, number> = {
@@ -53,8 +113,6 @@ export const STATUS_JUDGMENTS: Record<string, string> = {
   'نحس انفصال': 'دشمن کو دور کرنا، روپیہ گم ہوجانا، دفعِ امراض، چوری جدائی وغیرہ نحس کاموں کے حصول کے لیے کامیابی۔'
 };
 
-// 24 Hour status matrix (7 days x 24 hours)
-// 0: Sunday, 1: Monday, 2: Tuesday, 3: Wednesday, 4: Thursday, 5: Friday, 6: Saturday
 export const SAAT_STATUS_MATRIX: Record<number, string[]> = {
   0: ['سعد اتصال', 'ممزوج', 'نحس', 'بد', 'سعد ممزوج', 'نحس ممزوج', 'سعد انفصال', 'بد اتصال', 'بد انفصال', 'نحس اتصال', 'نحس انفصال', 'سعد', 'سعد اتصال', 'ممزوج', 'نحس', 'بد', 'سعد ممزوج', 'نحس ممزوج', 'سعد انفصال', 'بد اتصال', 'بد انفصال', 'نحس اتصال', 'نحس انفصال', 'سعد'],
   1: ['سعد', 'سعد اتصال', 'ممزوج', 'نحس', 'بد', 'سعد ممزوج', 'نحس ممزوج', 'سعد انفصال', 'بد اتصال', 'بد انفصال', 'نحس اتصال', 'نحس انفصال', 'سعد', 'سعد اتصال', 'ممزوج', 'نحس', 'بد', 'سعد ممزوج', 'نحس ممزوج', 'سعد انفصال', 'بد اتصال', 'بد انفصال', 'نحس اتصال', 'نحس انفصال'],

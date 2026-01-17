@@ -4,6 +4,7 @@ import { ABJAD_MAP, PLANET_VALUES } from '../constants';
 /**
  * Calculates the total Abjad value of a string by summing mapped values of its characters.
  * Ignores spaces and unsupported characters.
+ * Explicitly checks for undefined to ensure 0-value characters (like Standalone Hamza) are processed.
  */
 export const calculateAbjad = (text: string): number => {
   if (!text) return 0;
@@ -12,8 +13,9 @@ export const calculateAbjad = (text: string): number => {
   const normalized = text.replace(/\s+/g, '');
   
   for (const char of normalized) {
-    if (ABJAD_MAP[char]) {
-      total += ABJAD_MAP[char];
+    const value = ABJAD_MAP[char];
+    if (value !== undefined) {
+      total += value;
     }
   }
   
