@@ -12,6 +12,8 @@ interface DiagnosisResult {
   type: string;
   adad: number;
   remainder: number;
+  symptoms: string;
+  treatment: string;
   breakdown: {
     nameAdad: number;
     motherAdad: number;
@@ -19,6 +21,29 @@ interface DiagnosisResult {
     saatValue: number;
   };
 }
+
+const DIAGNOSIS_DETAILS: Record<number, { type: string; symptoms: string; treatment: string }> = {
+  1: {
+    type: 'نظرِ بد (Nazar-e-Bad)',
+    symptoms: 'کندھوں میں بوجھ، کام میں رکاوٹ، چہرے کا رنگ بدلنا۔',
+    treatment: 'معوذتین (سورہ فلق، سورہ ناس) 11 بار اور نظرِ بد کی مستند دعا۔'
+  },
+  2: {
+    type: 'اندرونی بخار (Androoni Bukhar)',
+    symptoms: 'جسم میں درد، بخار محسوس ہونا مگر تھرمامیٹر میں نہ آنا، سستی۔',
+    treatment: 'صدقہ خیرات، سورہ رحمن کی تلاوت سننا، اور ڈاکٹر سے رجوع۔'
+  },
+  3: {
+    type: 'جنات (Jinnat)',
+    symptoms: 'ڈراؤنے خواب، تنہائی کا خوف، بلاوجہ چڑچڑاپن۔',
+    treatment: 'منزل (آیاتِ شفاء) کی تلاوت، گھر میں اذان دینا یا اونچی آواز میں چلانا۔'
+  },
+  0: {
+    type: 'جادو (Jadu)',
+    symptoms: 'شدید بندش، گھر میں خون کے چھینٹے یا بدبو، میاں بیوی میں نفرت۔',
+    treatment: 'سورہ بقرہ کی تلاوت، باقاعدہ شرعی رقیہ، اور کالے چنے کا صدقہ۔'
+  }
+};
 
 const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat, solarData }) => {
   const [name, setName] = useState('');
@@ -77,17 +102,12 @@ const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat, solarData }) => {
     const total = nameAdad + motherAdad + dayValue + saatValue;
     const remainder = total % 4;
 
-    let diagnosisType = '';
-    switch (remainder) {
-      case 0: diagnosisType = 'جادو (Jadu)'; break;
-      case 3: diagnosisType = 'جنات (Jinnat)'; break;
-      case 2: diagnosisType = 'نظرِ بد (Nazar-e-Bad)'; break;
-      case 1: diagnosisType = 'اندرونی بخار (Androoni Bukhar)'; break;
-      default: diagnosisType = 'نامعلوم';
-    }
+    const details = DIAGNOSIS_DETAILS[remainder];
 
     setResult({
-      type: diagnosisType,
+      type: details.type,
+      symptoms: details.symptoms,
+      treatment: details.treatment,
       adad: total,
       remainder,
       breakdown: {
@@ -223,11 +243,33 @@ const MarzRohani: React.FC<MarzRohaniProps> = ({ initialSaat, solarData }) => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <span className="text-slate-400 urdu-text text-sm">حتمی تشخیص:</span>
-            <h3 className="text-4xl urdu-text font-bold text-amber-500 mb-4 drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">
-              {result.type}
-            </h3>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <span className="text-slate-400 urdu-text text-sm">حتمی تشخیص:</span>
+              <h3 className="text-3xl md:text-4xl urdu-text font-bold text-amber-500 mb-4 drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">
+                {result.type}
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {/* Symptoms Box */}
+              <div className="bg-slate-900/40 border border-amber-500/20 rounded-2xl p-5 text-right relative overflow-hidden group hover:border-amber-500/40 transition-colors">
+                <div className="absolute top-0 right-0 w-2 h-full bg-red-500/20"></div>
+                <h4 className="urdu-text text-amber-500 font-bold text-lg mb-2 pr-4">علامات</h4>
+                <p className="urdu-text text-slate-200 leading-relaxed pr-4 text-lg">
+                  {result.symptoms}
+                </p>
+              </div>
+
+              {/* Treatment Box */}
+              <div className="bg-emerald-900/20 border border-emerald-500/20 rounded-2xl p-5 text-right relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+                <div className="absolute top-0 right-0 w-2 h-full bg-emerald-500/30"></div>
+                <h4 className="urdu-text text-emerald-400 font-bold text-lg mb-2 pr-4">تجویز کردہ علاج</h4>
+                <p className="urdu-text text-emerald-100 leading-relaxed pr-4 text-lg">
+                  {result.treatment}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-amber-500/10">
