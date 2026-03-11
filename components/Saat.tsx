@@ -170,19 +170,25 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     } catch (e) {
       console.error('IP Location Error:', e);
     }
-    
-    // Silent fallback to Gujar Khan if IP detection fails
-    console.warn('IP fallback failed. Using Gujar Khan fallback.');
-    await fetchData(33.25, 73.30, 'گوجر خان');
-    return true;
+    return false;
   };
 
   const initLocation = useCallback(async (forceRefresh = false) => {
     if (hasFetched.current && !forceRefresh) return;
     
     setLoading(true);
-    // Skip navigator.geolocation as it's blocked in APK WebViews
-    await fetchByIP();
+    setError(null);
+    
+    // Attempt IP-based location
+    const ipSuccess = await fetchByIP();
+    
+    if (!ipSuccess) {
+      // If IP detection fails, we don't immediately fallback to Gujar Khan
+      // to avoid the "stuck" feeling. We show an error but keep Gujar Khan as a last resort
+      // if the user tries to search and fails.
+      setError('مقام خودکار طور پر معلوم نہیں ہو سکا۔ براہ کرم شہر تلاش کریں۔');
+      setLoading(false);
+    }
   }, []);
 
   const handleCitySearch = async (e: React.FormEvent) => {
@@ -192,6 +198,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     setIsSearching(true);
     setError(null);
     try {
+      // Use Nominatim for global city search
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&accept-language=ur&limit=1`);
       const data = await response.json();
       
@@ -199,15 +206,24 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
         const result = data[0];
         const lat = parseFloat(result.lat);
         const lon = parseFloat(result.lon);
+        // Extract city name or first part of display name
         const displayName = result.display_name.split(',')[0];
         await fetchData(lat, lon, displayName);
         setSearchQuery('');
       } else {
+        // If search fails, and we have no data yet, use Gujar Khan as absolute fallback
+        if (!hasFetched.current) {
+          console.warn('Search failed and no initial data. Using Gujar Khan fallback.');
+          await fetchData(33.25, 73.30, 'گوجر خان');
+        }
         setError('شہر نہیں مل سکا۔ براہ کرم صحیح نام درج کریں۔');
       }
     } catch (err) {
       console.error('Search error:', err);
-      setError('شہر کی تلاش کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں یا دستی طور پر نام لکھیں۔');
+      if (!hasFetched.current) {
+        await fetchData(33.25, 73.30, 'گوجر خان');
+      }
+      setError('شہر کی تلاش کے دوران خرابی پیش آئی۔');
     } finally {
       setIsSearching(false);
     }
@@ -301,7 +317,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
             <p className="urdu-text text-xl text-amber-500 animate-pulse">ساعات مرتب کی جا رہی ہیں...</p>
             <p className="urdu-text text-xs text-slate-500">خودکار مقام اور سولر ڈیٹا حاصل کیا جا رہا ہے</p>
           </div>
-        ) : error ? (
+        ) : error && !hasFetched.current ? (
           <div className="flex flex-col items-center justify-center p-10 space-y-6 card-gradient rounded-3xl border border-red-500/20">
             <div className="text-6xl text-red-500">⚠️</div>
             <p className="urdu-text text-xl text-red-400 text-center">{error}</p>
@@ -327,6 +343,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
               >
                 [ Auto Detect Location ]
               </button>
+              {error && <p className="urdu-text text-[10px] text-red-400 mt-1">{error}</p>}
             </div>
 
             <div className="flex justify-center gap-10">
