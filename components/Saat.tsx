@@ -160,11 +160,11 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
   const fetchByIP = async () => {
     try {
       console.log('Fetching location by IP...');
-      // Primary IP Location API
-      const response = await fetch('https://ipapi.co/json/');
+      // Primary IP Location API (ip-api.com works well in APKs)
+      const response = await fetch('https://ip-api.com/json/');
       const data = await response.json();
-      if (data.latitude && data.longitude) {
-        await fetchData(data.latitude, data.longitude, data.city || 'آپ کا مقام');
+      if (data.status === 'success' && data.lat && data.lon) {
+        await fetchData(data.lat, data.lon, data.city || 'آپ کا مقام');
         return true;
       }
     } catch (e) {
