@@ -116,10 +116,10 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     return `مقام: ${lat.toFixed(2)}N, ${lng.toFixed(2)}E`;
   };
 
-  const fetchData = async (lat: number, lng: number, customName?: string) => {
+  const fetchData = async (lat: number, lng: number, customName?: string, suppressError = false) => {
     try {
       setLoading(true);
-      setError(null);
+      if (!suppressError) setError(null);
       
       const resToday = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lng}&date=today&formatted=0`);
       const dataToday = await resToday.json();
@@ -147,25 +147,29 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
         }
         
         hasFetched.current = true;
+        return true;
       } else {
         throw new Error('Solar API Error');
       }
     } catch (err) {
-      setError('انٹرنیٹ یا سولر ڈیٹا سرور سے رابطہ نہیں ہو سکا۔');
+      console.error('FetchData Error:', err);
+      if (!suppressError) {
+        setError('انٹرنیٹ یا سولر ڈیٹا سرور سے رابطہ نہیں ہو سکا۔');
+      }
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchByIP = async () => {
+  const fetchByIP = async (suppressError = false) => {
     try {
-      console.log('Fetching location by IP...');
-      // Primary IP Location API (ip-api.com works well in APKs)
-      const response = await fetch('https://ip-api.com/json/');
+      console.log('Fetching location by IP (ipapi.co)...');
+      // Secure HTTPS IP Location API
+      const response = await fetch('https://ipapi.co/json/');
       const data = await response.json();
-      if (data.status === 'success' && data.lat && data.lon) {
-        await fetchData(data.lat, data.lon, data.city || 'آپ کا مقام');
-        return true;
+      if (data.latitude && data.longitude) {
+        return await fetchData(data.latitude, data.longitude, data.city || 'آپ کا مقام', suppressError);
       }
     } catch (e) {
       console.error('IP Location Error:', e);
@@ -179,15 +183,13 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     setLoading(true);
     setError(null);
     
-    // Attempt IP-based location
-    const ipSuccess = await fetchByIP();
+    // Attempt IP-based location silently first
+    const ipSuccess = await fetchByIP(true);
     
     if (!ipSuccess) {
-      // If IP detection fails, we don't immediately fallback to Gujar Khan
-      // to avoid the "stuck" feeling. We show an error but keep Gujar Khan as a last resort
-      // if the user tries to search and fails.
-      setError('مقام خودکار طور پر معلوم نہیں ہو سکا۔ براہ کرم شہر تلاش کریں۔');
-      setLoading(false);
+      // Silent fallback to Gujar Khan if IP detection or initial fetchData fails
+      console.warn('IP detection or initial fetch failed. Silent fallback to Gujar Khan.');
+      await fetchData(33.25, 73.30, 'گوجر خان', false);
     }
   }, []);
 
@@ -198,32 +200,39 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     setIsSearching(true);
     setError(null);
     try {
-      // Use Nominatim for global city search
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&accept-language=ur&limit=1`);
+      // Use Nominatim with proper User-Agent to avoid blocking
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&accept-language=ur&limit=1`,
+        {
+          headers: {
+            'User-Agent': 'SpiritualPortalApp/1.0 (Contact: support@example.com)'
+          }
+        }
+      );
       const data = await response.json();
       
       if (data && data.length > 0) {
         const result = data[0];
         const lat = parseFloat(result.lat);
         const lon = parseFloat(result.lon);
-        // Extract city name or first part of display name
         const displayName = result.display_name.split(',')[0];
         await fetchData(lat, lon, displayName);
         setSearchQuery('');
       } else {
-        // If search fails, and we have no data yet, use Gujar Khan as absolute fallback
+        // If search fails and no data yet, use Gujar Khan fallback silently
         if (!hasFetched.current) {
-          console.warn('Search failed and no initial data. Using Gujar Khan fallback.');
-          await fetchData(33.25, 73.30, 'گوجر خان');
+          await fetchData(33.25, 73.30, 'گوجر خان', true);
+        } else {
+          setError('شہر نہیں مل سکا۔');
         }
-        setError('شہر نہیں مل سکا۔ براہ کرم صحیح نام درج کریں۔');
       }
     } catch (err) {
       console.error('Search error:', err);
       if (!hasFetched.current) {
-        await fetchData(33.25, 73.30, 'گوجر خان');
+        await fetchData(33.25, 73.30, 'گوجر خان', true);
+      } else {
+        setError('تلاش میں خرابی۔');
       }
-      setError('شہر کی تلاش کے دوران خرابی پیش آئی۔');
     } finally {
       setIsSearching(false);
     }
