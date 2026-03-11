@@ -160,6 +160,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
   const fetchByIP = async () => {
     try {
       console.log('Fetching location by IP...');
+      // Primary IP Location API
       const response = await fetch('https://ipapi.co/json/');
       const data = await response.json();
       if (data.latitude && data.longitude) {
@@ -169,36 +170,19 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     } catch (e) {
       console.error('IP Location Error:', e);
     }
-    return false;
+    
+    // Silent fallback to Gujar Khan if IP detection fails
+    console.warn('IP fallback failed. Using Gujar Khan fallback.');
+    await fetchData(33.25, 73.30, 'گوجر خان');
+    return true;
   };
 
   const initLocation = useCallback(async (forceRefresh = false) => {
     if (hasFetched.current && !forceRefresh) return;
     
     setLoading(true);
-    
-    // Attempt Geolocation first
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          await fetchData(pos.coords.latitude, pos.coords.longitude);
-        },
-        async (err) => {
-          console.warn('Browser Geolocation failed/denied. Trying IP fallback...');
-          const ipSuccess = await fetchByIP();
-          if (!ipSuccess) {
-            console.warn('IP fallback failed. Using Makkah fallback.');
-            await fetchData(21.3891, 39.8579, 'مکہ مکرمہ');
-          }
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      );
-    } else {
-      const ipSuccess = await fetchByIP();
-      if (!ipSuccess) {
-        await fetchData(21.3891, 39.8579, 'مکہ مکرمہ');
-      }
-    }
+    // Skip navigator.geolocation as it's blocked in APK WebViews
+    await fetchByIP();
   }, []);
 
   const handleCitySearch = async (e: React.FormEvent) => {
@@ -206,6 +190,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
+    setError(null);
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&accept-language=ur&limit=1`);
       const data = await response.json();
@@ -218,11 +203,11 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
         await fetchData(lat, lon, displayName);
         setSearchQuery('');
       } else {
-        alert('شہر نہیں مل سکا۔ براہ کرم صحیح نام درج کریں۔');
+        setError('شہر نہیں مل سکا۔ براہ کرم صحیح نام درج کریں۔');
       }
     } catch (err) {
       console.error('Search error:', err);
-      alert('تلاش کے دوران خرابی پیش آئی۔');
+      setError('شہر کی تلاش کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں یا دستی طور پر نام لکھیں۔');
     } finally {
       setIsSearching(false);
     }
@@ -288,27 +273,6 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     </div>
   );
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center p-20 space-y-4">
-      <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
-      <p className="urdu-text text-xl text-amber-500 animate-pulse">ساعات مرتب کی جا رہی ہیں...</p>
-      <p className="urdu-text text-xs text-slate-500">خودکار مقام اور سولر ڈیٹا حاصل کیا جا رہا ہے</p>
-    </div>
-  );
-
-  if (error) return (
-    <div className="flex flex-col items-center justify-center p-20 space-y-6 card-gradient rounded-3xl border border-red-500/20">
-      <div className="text-6xl text-red-500">⚠️</div>
-      <p className="urdu-text text-xl text-red-400 text-center">{error}</p>
-      <button 
-        onClick={() => { hasFetched.current = false; initLocation(true); }}
-        className="gold-bg text-emerald-950 px-8 py-3 rounded-xl urdu-text font-bold text-lg"
-      >
-        دوبارہ کوشش کریں
-      </button>
-    </div>
-  );
-
   return (
     <div className="max-w-7xl mx-auto space-y-10 animate-fadeIn pb-24 px-4">
       {/* Search Bar & Location Info */}
@@ -331,46 +295,67 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
           </button>
         </form>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center card-gradient border border-slate-800 p-6 rounded-3xl relative overflow-hidden shadow-2xl">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
-          
-          <div className="text-right space-y-1">
-            <div className="flex items-center justify-end gap-2">
-               <h2 className="urdu-text text-amber-500 text-2xl font-bold">{locationName}</h2>
-               <span className="text-xl">📍</span>
-            </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center p-10 space-y-4 card-gradient rounded-3xl border border-slate-800">
+            <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin"></div>
+            <p className="urdu-text text-xl text-amber-500 animate-pulse">ساعات مرتب کی جا رہی ہیں...</p>
+            <p className="urdu-text text-xs text-slate-500">خودکار مقام اور سولر ڈیٹا حاصل کیا جا رہا ہے</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center p-10 space-y-6 card-gradient rounded-3xl border border-red-500/20">
+            <div className="text-6xl text-red-500">⚠️</div>
+            <p className="urdu-text text-xl text-red-400 text-center">{error}</p>
             <button 
               onClick={() => { hasFetched.current = false; initLocation(true); }}
-              className="text-[10px] text-emerald-500/60 uppercase tracking-widest hover:text-amber-500 transition-colors urdu-text"
+              className="gold-bg text-emerald-950 px-8 py-3 rounded-xl urdu-text font-bold text-lg"
             >
-              [ Auto Detect Location ]
+              دوبارہ کوشش کریں
             </button>
           </div>
-
-          <div className="flex justify-center gap-10">
-            <div className="text-center">
-              <span className="block text-amber-500/60 urdu-text text-xs">طلوعِ آفتاب</span>
-              <span className="font-mono text-xl text-slate-200">{sunrise}</span>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center card-gradient border border-slate-800 p-6 rounded-3xl relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-3xl rounded-full"></div>
+            
+            <div className="text-right space-y-1">
+              <div className="flex items-center justify-end gap-2">
+                 <h2 className="urdu-text text-amber-500 text-2xl font-bold">{locationName}</h2>
+                 <span className="text-xl">📍</span>
+              </div>
+              <button 
+                onClick={() => { hasFetched.current = false; initLocation(true); }}
+                className="text-[10px] text-emerald-500/60 uppercase tracking-widest hover:text-amber-500 transition-colors urdu-text"
+              >
+                [ Auto Detect Location ]
+              </button>
             </div>
-            <div className="text-center">
-              <span className="block text-amber-500/60 urdu-text text-xs">غروبِ آفتاب</span>
-              <span className="font-mono text-xl text-slate-200">{sunset}</span>
+
+            <div className="flex justify-center gap-10">
+              <div className="text-center">
+                <span className="block text-amber-500/60 urdu-text text-xs">طلوعِ آفتاب</span>
+                <span className="font-mono text-xl text-slate-200">{sunrise}</span>
+              </div>
+              <div className="text-center">
+                <span className="block text-amber-500/60 urdu-text text-xs">غروبِ آفتاب</span>
+                <span className="font-mono text-xl text-slate-200">{sunset}</span>
+              </div>
+            </div>
+
+            <div className="text-left hidden md:block">
+              <div className="bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20 inline-block">
+                <span className="urdu-text text-amber-500 text-sm">موجودہ دن: {getIslamicDayInfo().name}</span>
+              </div>
             </div>
           </div>
-
-          <div className="text-left hidden md:block">
-            <div className="bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/20 inline-block">
-              <span className="urdu-text text-amber-500 text-sm">موجودہ دن: {getIslamicDayInfo().name}</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Sa'at Tables */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <HourTable title="دن کی ساعات" data={dayHours} dayLabel={`سورج نکلنے سے غروب تک: ${dayName}`} />
-        <HourTable title="رات کی ساعات" data={nightHours} dayLabel={`غروب سے اگلی صبح تک: ${nextDayName}`} />
-      </div>
+      {!loading && !error && (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          <HourTable title="دن کی ساعات" data={dayHours} dayLabel={`سورج نکلنے سے غروب تک: ${dayName}`} />
+          <HourTable title="رات کی ساعات" data={nightHours} dayLabel={`غروب سے اگلی صبح تک: ${nextDayName}`} />
+        </div>
+      )}
 
       {/* Details Modal */}
       {selectedHour && (
