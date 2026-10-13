@@ -11,7 +11,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
   const isPremium = (id: AppView) => 
     id !== AppView.ILM_US_SAAT && 
     id !== AppView.ROHANI_ILAJ && 
-    id !== AppView.NAMAZ_TIMINGS;
+    id !== AppView.NAMAZ_TIMINGS && 
+    id !== AppView.QURAN_ROHANI_PORTAL;
 
   const features = [
     { 
@@ -28,6 +29,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
       desc: 'مرکز کا تعارف اور مریضوں کے لیے ضروری ہدایات (مفت)', 
       icon: (
         <span className="text-4xl">🕌</span>
+      )
+    },
+    { 
+      id: AppView.QURAN_ROHANI_PORTAL, 
+      title: 'روحانی علاج و طبِ نبوی', 
+      desc: 'قرآنی وظائف، نبوی علاج، اور تلاوتِ قرآنِ پاک (مفت پورٹل)', 
+      icon: (
+        <span className="text-4xl">📖</span>
       )
     },
     { 

@@ -10,6 +10,7 @@ import ShadiMuwafiqat from './components/ShadiMuwafiqat';
 import KhairOShar from './components/KhairOShar';
 import RohaniIlaj from './components/RohaniIlaj';
 import NamazTimings from './components/NamazTimings';
+import QuranRohaniPortal from './components/QuranRohaniPortal';
 import PremiumModal from './components/PremiumModal';
 
 const App: React.FC = () => {
@@ -39,8 +40,22 @@ const App: React.FC = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
+    // Mobile hardware back button & browser navigation handler
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.view) {
+        setCurrentView(e.state.view);
+      } else {
+        // Back to Dashboard without exiting app
+        setPreSelectedSaat(null);
+        setCurrentView(AppView.DASHBOARD);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
@@ -61,11 +76,12 @@ const App: React.FC = () => {
   };
 
   const isFeaturePremium = (view: AppView) => {
-    // ILM_US_SAAT, ROHANI_ILAJ, and NAMAZ_TIMINGS are FREE features.
+    // Free features
     return (
       view !== AppView.ILM_US_SAAT && 
       view !== AppView.ROHANI_ILAJ && 
       view !== AppView.NAMAZ_TIMINGS && 
+      view !== AppView.QURAN_ROHANI_PORTAL &&
       view !== AppView.DASHBOARD
     );
   };
@@ -74,13 +90,29 @@ const App: React.FC = () => {
     if (!isUnlocked && isFeaturePremium(view)) {
       setShowPremiumModal(true);
     } else {
+      // Push history state so mobile hardware back button returns to dashboard
+      if (view !== AppView.DASHBOARD) {
+        window.history.pushState({ view }, '', `#${view.toLowerCase()}`);
+      }
       setCurrentView(view);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleBack = () => {
+    setPreSelectedSaat(null);
+    if (window.history.state && window.history.state.view) {
+      window.history.back();
+    } else {
+      setCurrentView(AppView.DASHBOARD);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const getTitle = () => {
     switch (currentView) {
       case AppView.DASHBOARD: return 'روحانی حساب کتاب و استخارہ';
+      case AppView.QURAN_ROHANI_PORTAL: return 'روحانی علاج و طبِ نبوی';
       case AppView.NAMAZ_TIMINGS: return 'اوقاتِ نماز و نوافل';
       case AppView.MARZ_ROHANI: return 'تشخیصِ امراض';
       case AppView.ISM_E_AZAM: return 'انتخابِ اسمِ اعظم';
@@ -94,13 +126,15 @@ const App: React.FC = () => {
 
   const handleUseSaat = (planet: string, value: number) => {
     setPreSelectedSaat({ planet, value });
-    setCurrentView(AppView.MARZ_ROHANI);
+    handleViewSelect(AppView.MARZ_ROHANI);
   };
 
   const renderView = () => {
     switch (currentView) {
       case AppView.DASHBOARD:
         return <Dashboard onSelect={handleViewSelect} isUnlocked={isUnlocked} />;
+      case AppView.QURAN_ROHANI_PORTAL:
+        return <QuranRohaniPortal />;
       case AppView.NAMAZ_TIMINGS:
         return <NamazTimings />;
       case AppView.MARZ_ROHANI:
@@ -123,10 +157,7 @@ const App: React.FC = () => {
   return (
     <Layout 
       currentView={currentView} 
-      onBack={() => {
-        setPreSelectedSaat(null);
-        setCurrentView(AppView.DASHBOARD);
-      }}
+      onBack={handleBack}
       title={getTitle()}
       onInstall={showInstallBtn ? handleInstall : undefined}
     >
