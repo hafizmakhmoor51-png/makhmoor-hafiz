@@ -9,6 +9,7 @@ import Saat from './components/Saat';
 import ShadiMuwafiqat from './components/ShadiMuwafiqat';
 import KhairOShar from './components/KhairOShar';
 import RohaniIlaj from './components/RohaniIlaj';
+import NamazTimings from './components/NamazTimings';
 import PremiumModal from './components/PremiumModal';
 
 const App: React.FC = () => {
@@ -60,8 +61,13 @@ const App: React.FC = () => {
   };
 
   const isFeaturePremium = (view: AppView) => {
-    // ILM_US_SAAT and ROHANI_ILAJ are FREE features.
-    return view !== AppView.ILM_US_SAAT && view !== AppView.ROHANI_ILAJ && view !== AppView.DASHBOARD;
+    // ILM_US_SAAT, ROHANI_ILAJ, and NAMAZ_TIMINGS are FREE features.
+    return (
+      view !== AppView.ILM_US_SAAT && 
+      view !== AppView.ROHANI_ILAJ && 
+      view !== AppView.NAMAZ_TIMINGS && 
+      view !== AppView.DASHBOARD
+    );
   };
 
   const handleViewSelect = (view: AppView) => {
@@ -75,6 +81,7 @@ const App: React.FC = () => {
   const getTitle = () => {
     switch (currentView) {
       case AppView.DASHBOARD: return 'روحانی حساب کتاب و استخارہ';
+      case AppView.NAMAZ_TIMINGS: return 'اوقاتِ نماز و نوافل';
       case AppView.MARZ_ROHANI: return 'تشخیصِ امراض';
       case AppView.ISM_E_AZAM: return 'انتخابِ اسمِ اعظم';
       case AppView.ILM_US_SAAT: return 'علم الساعات';
@@ -94,6 +101,8 @@ const App: React.FC = () => {
     switch (currentView) {
       case AppView.DASHBOARD:
         return <Dashboard onSelect={handleViewSelect} isUnlocked={isUnlocked} />;
+      case AppView.NAMAZ_TIMINGS:
+        return <NamazTimings />;
       case AppView.MARZ_ROHANI:
         return <MarzRohani initialSaat={preSelectedSaat} solarData={solarData} />;
       case AppView.ISM_E_AZAM:

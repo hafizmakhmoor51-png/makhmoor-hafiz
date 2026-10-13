@@ -8,9 +8,20 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onSelect, isUnlocked }) => {
-  const isPremium = (id: AppView) => id !== AppView.ILM_US_SAAT && id !== AppView.ROHANI_ILAJ;
+  const isPremium = (id: AppView) => 
+    id !== AppView.ILM_US_SAAT && 
+    id !== AppView.ROHANI_ILAJ && 
+    id !== AppView.NAMAZ_TIMINGS;
 
   const features = [
+    { 
+      id: AppView.NAMAZ_TIMINGS, 
+      title: 'اوقاتِ نماز و نوافل', 
+      desc: 'پنجگانہ نمازیں، اشراق، چاشت، زوال، تہجد اور صوتی الرٹ (مفت)', 
+      icon: (
+        <span className="text-4xl">🕋</span>
+      )
+    },
     { 
       id: AppView.ROHANI_ILAJ, 
       title: 'سلسلہ روحانی علاج', 
