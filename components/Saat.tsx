@@ -19,6 +19,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
   const [nightHours, setNightHours] = useState<SaatHour[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedHour, setSelectedHour] = useState<SaatHour | null>(null);
   
   // Search state
@@ -105,13 +106,20 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ur`);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ur`,
+        {
+          headers: {
+            'User-Agent': 'RohaniPortalApp/1.0'
+          }
+        }
+      );
       const data = await response.json();
       if (data && data.address) {
         return data.address.city || data.address.town || data.address.village || data.address.state || data.address.country || 'عالمی مقام';
       }
     } catch (e) {
-      console.warn('Geocoding error:', e);
+      console.warn('Geocoding notice:', e);
     }
     return `مقام: ${lat.toFixed(2)}N, ${lng.toFixed(2)}E`;
   };
@@ -152,7 +160,7 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
         throw new Error('Solar API Error');
       }
     } catch (err) {
-      console.error('FetchData Error:', err);
+      console.warn('FetchData notice:', err);
       if (!suppressError) {
         setError('انٹرنیٹ یا سولر ڈیٹا سرور سے رابطہ نہیں ہو سکا۔');
       }
@@ -163,17 +171,38 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
   };
 
   const fetchByIP = async (suppressError = false) => {
+    // 1. Try ipwho.is (fast, HTTPS, CORS-enabled for browser and WebView)
     try {
-      console.log('Fetching location by IP (ipapi.co)...');
-      // Secure HTTPS IP Location API
-      const response = await fetch('https://ipapi.co/json/');
-      const data = await response.json();
-      if (data.latitude && data.longitude) {
-        return await fetchData(data.latitude, data.longitude, data.city || 'آپ کا مقام', suppressError);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch('https://ipwho.is/', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.success !== false && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+          return await fetchData(data.latitude, data.longitude, data.city || 'آپ کا مقام', suppressError);
+        }
       }
     } catch (e) {
-      console.error('IP Location Error:', e);
+      console.warn('ipwho.is fetch bypassed:', e);
     }
+
+    // 2. Secondary fallback to ipapi.co
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch('https://ipapi.co/json/', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && !data.error && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+          return await fetchData(data.latitude, data.longitude, data.city || 'آپ کا مقام', suppressError);
+        }
+      }
+    } catch (e) {
+      console.warn('ipapi.co fetch bypassed:', e);
+    }
+
     return false;
   };
 
@@ -198,14 +227,14 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
-    setError(null);
+    setSearchError(null);
     try {
-      // Use Nominatim with proper User-Agent to avoid blocking
+      // Use Nominatim with proper User-Agent to avoid blocking in APKs
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&accept-language=ur&limit=1`,
         {
           headers: {
-            'User-Agent': 'SpiritualPortalApp/1.0 (Contact: support@example.com)'
+            'User-Agent': 'RohaniPortalApp/1.0'
           }
         }
       );
@@ -218,21 +247,20 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
         const displayName = result.display_name.split(',')[0];
         await fetchData(lat, lon, displayName);
         setSearchQuery('');
+        setSearchError(null);
       } else {
         // If search fails and no data yet, use Gujar Khan fallback silently
         if (!hasFetched.current) {
           await fetchData(33.25, 73.30, 'گوجر خان', true);
-        } else {
-          setError('شہر نہیں مل سکا۔');
         }
+        setSearchError('شہر تلاش کرنے میں دشواری ہے، براہِ کرم دوبارہ کوشش کریں');
       }
     } catch (err) {
-      console.error('Search error:', err);
+      console.warn('Search notice:', err);
       if (!hasFetched.current) {
         await fetchData(33.25, 73.30, 'گوجر خان', true);
-      } else {
-        setError('تلاش میں خرابی۔');
       }
+      setSearchError('شہر تلاش کرنے میں دشواری ہے، براہِ کرم دوبارہ کوشش کریں');
     } finally {
       setIsSearching(false);
     }
@@ -302,23 +330,39 @@ const Saat: React.FC<SaatProps> = ({ onUseSaat, onSolarDataUpdate }) => {
     <div className="max-w-7xl mx-auto space-y-10 animate-fadeIn pb-24 px-4">
       {/* Search Bar & Location Info */}
       <div className="flex flex-col gap-6">
-        <form onSubmit={handleCitySearch} className="flex gap-2 max-w-2xl mx-auto w-full">
-          <input 
-            type="text" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-grow bg-emerald-900/20 border border-amber-500/20 rounded-2xl p-4 text-right urdu-text text-xl focus:border-amber-500 focus:outline-none transition-all placeholder:text-emerald-500/30 text-emerald-50 shadow-inner"
-            placeholder="شہر کا نام یہاں تلاش کریں (مثلاً گوجر خان)"
-            disabled={isSearching}
-          />
+        <form onSubmit={handleCitySearch} className="flex gap-2 max-w-2xl mx-auto w-full relative">
+          <div className="relative flex-grow">
+            <input 
+              type="text" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-emerald-900/20 border border-amber-500/20 rounded-2xl p-4 pr-12 text-right urdu-text text-xl focus:border-amber-500 focus:outline-none transition-all placeholder:text-emerald-500/30 text-emerald-50 shadow-inner"
+              placeholder="شہر کا نام یہاں تلاش کریں (مثلاً گوجر خان)"
+              disabled={isSearching}
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500/40">🔍</span>
+          </div>
           <button 
             type="submit"
             disabled={isSearching || !searchQuery.trim()}
-            className="gold-bg text-emerald-950 px-6 rounded-2xl font-bold urdu-text text-xl shadow-lg active:scale-95 disabled:opacity-50 transition-all whitespace-nowrap"
+            className="gold-bg text-emerald-950 px-8 rounded-2xl font-bold urdu-text text-xl shadow-lg active:scale-95 disabled:opacity-50 transition-all whitespace-nowrap flex items-center justify-center gap-2"
           >
-            {isSearching ? 'تلاش...' : 'تلاش کریں'}
+            {isSearching ? (
+              <div className="w-5 h-5 border-2 border-emerald-950/20 border-t-emerald-950 rounded-full animate-spin"></div>
+            ) : (
+              <>
+                <span>تلاش</span>
+                <span className="text-sm">✨</span>
+              </>
+            )}
           </button>
         </form>
+        
+        {searchError && (
+          <p className="urdu-text text-center text-red-400 text-sm -mt-4 animate-pulse">
+            {searchError}
+          </p>
+        )}
 
         {loading ? (
           <div className="flex flex-col items-center justify-center p-10 space-y-4 card-gradient rounded-3xl border border-slate-800">
